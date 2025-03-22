@@ -1,5 +1,5 @@
-Comprehensive Feature Extraction and Clustering Pipeline
-This repository provides a comprehensive pipeline for feature extraction, clustering, similarity search, and visualization, utilizing state-of-the-art technologies and methodologies.
+Feature Extraction and Clustering Pipeline
+This repository provides a comprehensive pipeline for feature extraction, clustering using DBSCAN and Agglomerative Clustering, attribute detection, and efficient similarity search using Pinecone. The pipeline is designed to process datasets, extract meaningful features, cluster them, detect specific attributes, store the fused features in Pinecone, and perform image retrieval based on similarity queries.
 
 Table of Contents
 Introduction
@@ -16,11 +16,11 @@ Usage
 
 3. Clustering
 
-4. Storing Vectors in Pinecone
+4. Attribute Detection and Fused Feature Store
 
-5. Similarity Search
+5. Storing Vectors in Pinecone
 
-6. Dimensionality Reduction and Visualization
+6. Image Retrieval
 
 Configuration
 
@@ -29,18 +29,18 @@ Contributing
 License
 
 Introduction
-This project integrates advanced neural architectures, clustering algorithms, vector databases, and visualization techniques to process and analyze high-dimensional data efficiently.
+This project integrates advanced neural architectures for feature extraction, clustering algorithms like DBSCAN and Agglomerative Clustering, attribute detection mechanisms, and vector databases like Pinecone to create an efficient pipeline for image analysis and retrieval.
 
 Features
-Feature Extraction: Utilize YOLOv11 and EfficientNet-B0 architectures for extracting meaningful features from images.
+Feature Extraction: Utilize neural network architectures to extract meaningful features from images.
 
-Clustering: Implement DBSCAN and Agglomerative DBSCAN algorithms to group similar data points.
+Clustering: Implement DBSCAN and Agglomerative Clustering algorithms to group similar data points.
 
-Vector Database: Store and manage feature vectors using Pinecone and FAISS for efficient similarity search.
+Attribute Detection: Detect specific attributes in images to create fused feature representations.
 
-Similarity Measures: Employ cosine similarity to assess the likeness between vectors.
+Vector Database: Store and manage feature vectors using Pinecone for efficient similarity search.
 
-Dimensionality Reduction: Apply PCA and t-SNE for reducing dimensionality and visualizing high-dimensional data.
+Image Retrieval: Perform similarity-based image retrieval using cosine similarity measures.
 
 Installation
 To set up the environment, follow these steps:
@@ -77,8 +77,6 @@ matplotlib
 
 pinecone-client
 
-faiss-cpu or faiss-gpu (depending on your system)
-
 numpy
 
 pandas
@@ -90,28 +88,19 @@ Prepare your dataset by organizing your images or data points in a structured fo
 2. Feature Extraction
 Extract features using the desired neural network architecture:
 
-YOLOv11:
+Example:
 
 python
 Copy
 Edit
-from models.yolov11 import YOLOv11
+from models.feature_extractor import FeatureExtractor
 
-yolo_model = YOLOv11(pretrained=True)
-features = yolo_model.extract_features(image)
-EfficientNet-B0:
-
-python
-Copy
-Edit
-from tensorflow.keras.applications import EfficientNetB0
-
-model = EfficientNetB0(weights='imagenet', include_top=False)
-features = model.predict(image)
+extractor = FeatureExtractor(pretrained=True)
+features = extractor.extract_features(image)
 Ensure that the image is preprocessed appropriately for the chosen model.
 
 3. Clustering
-Cluster the extracted features using DBSCAN or Agglomerative DBSCAN:
+Cluster the extracted features using DBSCAN or Agglomerative Clustering:
 
 DBSCAN:
 
@@ -122,7 +111,7 @@ from sklearn.cluster import DBSCAN
 
 clustering = DBSCAN(eps=0.5, min_samples=5).fit(features)
 labels = clustering.labels_
-Agglomerative DBSCAN:
+Agglomerative Clustering:
 
 python
 Copy
@@ -133,8 +122,21 @@ clustering = AgglomerativeClustering(n_clusters=None, distance_threshold=0.5).fi
 labels = clustering.labels_
 Adjust the parameters (eps, min_samples, distance_threshold) based on your dataset.
 
-4. Storing Vectors in Pinecone
-Initialize Pinecone and upload your feature vectors:
+4. Attribute Detection and Fused Feature Store
+Detect specific attributes in images and create fused feature representations:
+
+python
+Copy
+Edit
+from models.attribute_detector import AttributeDetector
+
+detector = AttributeDetector()
+attributes = detector.detect_attributes(image)
+fused_features = fuse_features(features, attributes)
+Implement the fuse_features function to combine features and attributes as needed.
+
+5. Storing Vectors in Pinecone
+Initialize Pinecone and upload your fused feature vectors:
 
 python
 Copy
@@ -143,44 +145,18 @@ import pinecone
 
 pinecone.init(api_key='YOUR_API_KEY', environment='us-west1-gcp')
 
-index = pinecone.Index('feature-index')
-index.upsert(items=[(str(i), feature) for i, feature in enumerate(features)])
+index = pinecone.Index('fused-feature-index')
+index.upsert(items=[(str(i), fused_feature) for i, fused_feature in enumerate(fused_features)])
 Replace 'YOUR_API_KEY' with your actual Pinecone API key.
 
-5. Similarity Search
-Perform similarity search using cosine similarity:
+6. Image Retrieval
+Perform similarity-based image retrieval using cosine similarity:
 
 python
 Copy
 Edit
-query_vector = features[0]  # Example query
+query_vector = fused_features[0]  # Example query
 results = index.query(queries=[query_vector], top_k=5, include_values=True)
-6. Dimensionality Reduction and Visualization
-Reduce dimensionality for visualization:
-
-PCA:
-
-python
-Copy
-Edit
-from sklearn.decomposition import PCA
-import matplotlib.pyplot as plt
-
-pca = PCA(n_components=2)
-reduced_features = pca.fit_transform(features)
-plt.scatter(reduced_features[:, 0], reduced_features[:, 1], c=labels)
-plt.show()
-t-SNE:
-
-python
-Copy
-Edit
-from sklearn.manifold import TSNE
-
-tsne = TSNE(n_components=2)
-reduced_features = tsne.fit_transform(features)
-plt.scatter(reduced_features[:, 0], reduced_features[:, 1], c=labels)
-plt.show()
 Configuration
 Configure the parameters in the config.yaml file:
 
@@ -196,10 +172,14 @@ clustering:
   eps: 0.5
   min_samples: 5
 
+attribute_detection:
+  enabled: true
+  method: 'default'  # Specify the attribute detection method
+
 pinecone:
   api_key: 'YOUR_API_KEY'
   environment: 'us-west1-gcp'
-  index_name: 'feature-index'
+  index_name: 'fused-feature-index'
 Contributing
 We welcome contributions! Please read our contributing guidelines for more information.
 
